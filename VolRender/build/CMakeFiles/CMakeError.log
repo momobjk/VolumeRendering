@@ -1,0 +1,90 @@
+Determining if the Q_WS_WIN exist failed with the following output:
+Change Dir: /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec4166784469/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec4166784469.dir/build.make CMakeFiles/cmTryCompileExec4166784469.dir/build
+make[1]: entrant dans le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+/usr/bin/cmake -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec4166784469.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec4166784469.dir/CheckSymbolExists.cxx.o -c /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_WIN’ was not declared in this scope
+make[1]: *** [CMakeFiles/cmTryCompileExec4166784469.dir/CheckSymbolExists.cxx.o] Erreur 1
+make[1]: quittant le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+make: *** [cmTryCompileExec4166784469/fast] Erreur 2
+
+File /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_WIN
+  return ((int*)(&Q_WS_WIN))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the Q_WS_QWS exist failed with the following output:
+Change Dir: /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3711395767/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3711395767.dir/build.make CMakeFiles/cmTryCompileExec3711395767.dir/build
+make[1]: entrant dans le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+/usr/bin/cmake -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3711395767.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec3711395767.dir/CheckSymbolExists.cxx.o -c /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_QWS’ was not declared in this scope
+make[1]: *** [CMakeFiles/cmTryCompileExec3711395767.dir/CheckSymbolExists.cxx.o] Erreur 1
+make[1]: quittant le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+make: *** [cmTryCompileExec3711395767/fast] Erreur 2
+
+File /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_QWS
+  return ((int*)(&Q_WS_QWS))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the Q_WS_MAC exist failed with the following output:
+Change Dir: /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp
+
+Run Build Command:/usr/bin/make "cmTryCompileExec3355735493/fast"
+/usr/bin/make -f CMakeFiles/cmTryCompileExec3355735493.dir/build.make CMakeFiles/cmTryCompileExec3355735493.dir/build
+make[1]: entrant dans le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+/usr/bin/cmake -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CMakeFiles 1
+Building CXX object CMakeFiles/cmTryCompileExec3355735493.dir/CheckSymbolExists.cxx.o
+/usr/bin/c++    -I/usr/include/qt4    -o CMakeFiles/cmTryCompileExec3355735493.dir/CheckSymbolExists.cxx.o -c /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx: In function ‘int main(int, char**)’:
+/home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:8:19: error: ‘Q_WS_MAC’ was not declared in this scope
+make[1]: *** [CMakeFiles/cmTryCompileExec3355735493.dir/CheckSymbolExists.cxx.o] Erreur 1
+make[1]: quittant le répertoire « /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp »
+make: *** [cmTryCompileExec3355735493/fast] Erreur 2
+
+File /home/mcifti/VolumeRendering/VolRender/build/CMakeFiles/CMakeTmp/CheckSymbolExists.cxx:
+/* */
+#include <QtCore/qglobal.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef Q_WS_MAC
+  return ((int*)(&Q_WS_MAC))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+

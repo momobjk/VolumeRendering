@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+   <FileVersion major="1" minor="6" />
+   <Project>
+      <Option title="VolRender" />
+      <Option makefile_is_custom="1" />
+      <Option compiler="gcc" />
+      <Option virtualFolders="CMake Files\;CMake Files\cmake_modules\;" />
+      <Build>
+      <Target title="all">
+         <Option working_dir="/home/mcifti/VolumeRendering/VolRender/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 all" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="VolRender">
+         <Option output="/home/mcifti/VolumeRendering/VolRender/build/VolRender" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/mcifti/VolumeRendering/VolRender/build" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DQT_GUI_LIB" />
+            <Add option="-DQT_CORE_LIB" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/build" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/headers" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/headers/QT_MOC" />
+            <Add directory="/usr/include/qt4" />
+            <Add directory="/usr/include/qt4/Qt3Support" />
+            <Add directory="/usr/include/qt4/QtCore" />
+            <Add directory="/usr/include/qt4/QtDBus" />
+            <Add directory="/usr/include/qt4/QtDeclarative" />
+            <Add directory="/usr/include/qt4/QtDesigner" />
+            <Add directory="/usr/include/qt4/QtGui" />
+            <Add directory="/usr/include/qt4/QtHelp" />
+            <Add directory="/usr/include/qt4/QtNetwork" />
+            <Add directory="/usr/include/qt4/QtOpenGL" />
+            <Add directory="/usr/include/qt4/QtScript" />
+            <Add directory="/usr/include/qt4/QtScriptTools" />
+            <Add directory="/usr/include/qt4/QtSql" />
+            <Add directory="/usr/include/qt4/QtSvg" />
+            <Add directory="/usr/include/qt4/QtTest" />
+            <Add directory="/usr/include/qt4/QtUiTools" />
+            <Add directory="/usr/include/qt4/QtWebKit" />
+            <Add directory="/usr/include/qt4/QtXml" />
+            <Add directory="/usr/include/qt4/QtXmlPatterns" />
+            <Add directory="/usr/share/qt4/mkspecs/default" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 VolRender" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="VolRender/fast">
+         <Option output="/home/mcifti/VolumeRendering/VolRender/build/VolRender" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/mcifti/VolumeRendering/VolRender/build" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DQT_GUI_LIB" />
+            <Add option="-DQT_CORE_LIB" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/build" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/headers" />
+            <Add directory="/home/mcifti/VolumeRendering/VolRender/headers/QT_MOC" />
+            <Add directory="/usr/include/qt4" />
+            <Add directory="/usr/include/qt4/Qt3Support" />
+            <Add directory="/usr/include/qt4/QtCore" />
+            <Add directory="/usr/include/qt4/QtDBus" />
+            <Add directory="/usr/include/qt4/QtDeclarative" />
+            <Add directory="/usr/include/qt4/QtDesigner" />
+            <Add directory="/usr/include/qt4/QtGui" />
+            <Add directory="/usr/include/qt4/QtHelp" />
+            <Add directory="/usr/include/qt4/QtNetwork" />
+            <Add directory="/usr/include/qt4/QtOpenGL" />
+            <Add directory="/usr/include/qt4/QtScript" />
+            <Add directory="/usr/include/qt4/QtScriptTools" />
+            <Add directory="/usr/include/qt4/QtSql" />
+            <Add directory="/usr/include/qt4/QtSvg" />
+            <Add directory="/usr/include/qt4/QtTest" />
+            <Add directory="/usr/include/qt4/QtUiTools" />
+            <Add directory="/usr/include/qt4/QtWebKit" />
+            <Add directory="/usr/include/qt4/QtXml" />
+            <Add directory="/usr/include/qt4/QtXmlPatterns" />
+            <Add directory="/usr/share/qt4/mkspecs/default" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 VolRender/fast" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rebuild_cache">
+         <Option working_dir="/home/mcifti/VolumeRendering/VolRender/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 rebuild_cache" />
+            <CompileFile command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/usr/bin/make -f &quot;/home/mcifti/VolumeRendering/VolRender/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      </Build>
+      <Unit filename="/home/mcifti/VolumeRendering/VolRender/src/VolRender.cpp">
+      </Unit>
+      <Unit filename="/home/mcifti/VolumeRendering/VolRender/CMakeLists.txt">
+          <Option virtualFolder="CMake Files\" />
+      </Unit>
+      <Unit filename="/home/mcifti/VolumeRendering/VolRender/cmake_modules/FindGLEW.cmake">
+          <Option virtualFolder="CMake Files\cmake_modules\" />
+      </Unit>
+   </Project>
+</CodeBlocks_project_file>

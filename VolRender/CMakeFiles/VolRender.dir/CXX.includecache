@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mcifti/VolumeRendering/VolRender/src/VolRender.cpp
+cstdio
+-
+cmath
+-
+cstring
+-
+GL/glew.h
+-
+GL/glut.h
+-
+transform.h
+/home/mcifti/VolumeRendering/VolRender/src/transform.h
+
+headers/mat3.h
+vec3.h
+headers/vec3.h
+
+headers/mat4.h
+mat3.h
+headers/mat3.h
+vec4.h
+headers/vec4.h
+
+headers/transform.h
+mat4.h
+headers/mat4.h
+
+headers/vec3.h
+cmath
+-
+
+headers/vec4.h
+vec3.h
+headers/vec3.h
+
