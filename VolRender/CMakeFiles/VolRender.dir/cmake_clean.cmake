@@ -1,4 +1,5 @@
 FILE(REMOVE_RECURSE
+  "CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o"
   "CMakeFiles/VolRender.dir/src/VolRender.cpp.o"
   "VolRender.pdb"
   "VolRender"

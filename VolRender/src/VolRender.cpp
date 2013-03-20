@@ -1,12 +1,10 @@
 // VolRender.cpp : Defines the entry point for the console application.
 //
-
-#include <cstdio>
-#include <cmath>
 #include <cstring>
 #include <GL/glew.h>
 #include <GL/glut.h>
 
+#include "Raw3DData.h"
 #include "transform.h"
 
 #define PI 3.1415926535897932384626433832795
@@ -28,359 +26,6 @@ int CheckGLError(char *file, int line)
     return retCode;
 }
 #define CHECK_GL_ERROR() CheckGLError(__FILE__, __LINE__)
-
-class Raw3DData 
-{
-public:
-    int					sx,sy,sz;	// size of data array
-    unsigned char		*data;   // raw data array
-    unsigned char		*grad;   // gradient data for lighting on GPU - to be computed or loaded
-    double				scale;  // for normalization
-
-    unsigned char	*transfer;
-    unsigned short	*preinttab,*rampleft,*rampright;  // pre-integration tables
-    int					tabsize;
-    double			voxelstep;
-
-    Raw3DData() { sx=0; sy=0; sz=0; data=0; grad=0; scale = 1.0/255.0; }
-    unsigned char get(int ind[3]) const { return data[ind[0]+ind[1]*sx+ind[2]*sx*sy]; }
-    unsigned char get(int i, int j, int k) const { return data[i+j*sx+k*sx*sy]; }
-    double rawdensity(int i, int j, int k, double ri, double rj, double rk) const
-    {
-        if (i>=sx-1 || j>=sy-1 || k>=sz-1 || i<0 || j<0 || k<0) { return 0.0; }
-        int id1[3]; id1[0]=i; id1[1]=j; id1[2]=k;
-        int id2[3]; id2[0]=i+1; id2[1]=j; id2[2]=k;
-        double vj1 = (double)get(id1)*scale*(1.0-(double)ri)+(double)get(id2)*scale*(double)ri;
-        id1[0]=i; id1[1]=j+1; id1[2]=k;
-        id2[0]=i+1; id2[1]=j+1; id2[2]=k;
-        double vj2 = (double)get(id1)*scale*(1.0-(double)ri)+(double)get(id2)*scale*(double)ri;
-        id1[0]=i; id1[1]=j; id1[2]=k+1;
-        id2[0]=i+1; id2[1]=j; id2[2]=k+1;
-        double vk1 = (double)get(id1)*scale*(1.0-(double)ri)+(double)get(id2)*scale*(double)ri;
-        id1[0]=i; id1[1]=j+1; id1[2]=k+1;
-        id2[0]=i+1; id2[1]=j+1; id2[2]=k+1;
-        double vk2 = (double)get(id1)*scale*(1.0-(double)ri)+(double)get(id2)*scale*(double)ri;
-        vj1 = vj1*(1.0-(double)rj)+vj2*(double)rj;
-        vk1 = vk1*(1.0-(double)rj)+vk2*(double)rj;
-        return double(vj1*(1.0-(double)rk)+vk1*(double)rk);
-    }
-    vec3<double> rawgradient(int i, int j, int k, double ri, double rj, double rk) const
-    {
-        double dx = rawdensity(i-1, j, k, ri, rj, rk);
-        dx -= rawdensity(i+1, j, k, ri, rj, rk);
-        double dy = rawdensity(i, j-1, k, ri, rj, rk);
-        dy -= rawdensity(i, j+1, k, ri, rj, rk);
-        double dz = rawdensity(i, j, k-1, ri, rj, rk);
-        dz -= rawdensity(i, j, k+1, ri, rj, rk);
-        vec3<double> vgrad = vec3<double>(dx,dy,dz);
-        if (vgrad.norm()==double(0)) return vec3<double>();
-        vgrad.normalize(vgrad.norm());
-        return vgrad;
-    }
-    // Loading RAW 3D texture images on 8bits
-    bool importRAW(char *name, int xx, int yy, int zz, double ss)
-    {
-
-        FILE *fd = fopen(name, "rb");
-        if (fd==0) { printf("cannot open file!\n"); exit(1); }
-        sx=xx; sy=yy; sz=zz;
-        data = new unsigned char [sx*sy*sz];
-        int i,j,k;
-        unsigned char *dd = new unsigned char [sx];
-        for (k=0; k<sz; k++)
-            for (j=0; j<sy; j++)
-            {
-                fread(dd, sizeof(unsigned char), sx, fd);
-                for (i=0; i<sx; i++)
-                {
-                    data[i+j*sx+k*sx*sy] = dd[i];
-                }
-            }
-        scale = ss;
-        delete [] dd;
-        return true;
-    }
-    bool importGrad(char *name)
-    {
-
-        FILE *fd = fopen(name, "rb");
-        if (fd==0) { printf("cannot open file!\n"); exit(1); }
-        grad = new unsigned char [4*sx*sy*sz];
-        fread(grad,sx*sy*sz*4, sizeof(unsigned char), fd);
-        fclose(fd);
-        return true;
-    }
-    void computeGrad()
-    {
-        int i,j,k;
-        if (data==0) return;
-        grad = new unsigned char [4*sx*sy*sz];
-        printf("computing gradient.\n");
-        for (i=0; i<sx; i++) for (j=0; j<sy; j++) for (k=0; k<sz; k++)
-        {
-            //printf("(%d, %d, %d)",i,j,k);
-            vec3<double> vgrad = rawgradient(i,j,k,0.0,0.0,0.0);
-            double dens = rawdensity(i,j,k,0.0,0.0,0.0);
-            int ind = i+j*sx+k*sx*sy;
-            grad[4*ind]=(unsigned char)(127.0*vgrad.X()+127.0);
-            grad[4*ind+1]=(unsigned char)(127.0*vgrad.Y()+127.0);
-            grad[4*ind+2]=(unsigned char)(127.0*vgrad.Z()+127.0);
-            grad[4*ind+3]=(unsigned char)(255.0*dens);
-        }
-        printf("done!\n");
-    }
-    void computePreIntegration(unsigned char *tf, int ts, double vs, int nstep)
-    {
-        int i,j,k;
-        double scal=65535.0;
-
-        tabsize=ts;
-        voxelstep=vs;
-        transfer = tf;
-
-        preinttab=(unsigned short *)malloc(ts*ts*4*sizeof (unsigned short));
-        rampleft=(unsigned short *)malloc(ts*ts*4*sizeof (unsigned short));
-        rampright=(unsigned short *)malloc(ts*ts*4*sizeof (unsigned short));
-        for (i=0; i<tabsize*tabsize; i++) { preinttab[i]=0; rampleft[i]=0; rampright[0]=0; }
-
-        for (i=0; i<tabsize; i++)
-        {
-            double alpha=0.0, colt=1.0, alphamid=0.0;
-            double vr = 0.0, vg = 0.0, vb = 0.0, alpha0r=0.0;
-            double vrl = 0.0, vgl = 0.0, vbl = 0.0, alphal=0.0;
-            double vrr = 0.0, vgr = 0.0, vbr = 0.0, alphar=0.0;
-            double vr2r = 0.0, vg2r = 0.0, vb2r = 0.0, alpha2r=0.0;
-            double vr3r = 0.0, vg3r = 0.0, vb3r = 0.0, alpha3r=0.0;
-
-            double vrg = 0.0, vgg = 0.0, vbg = 0.0;
-            double vrlg = 0.0, vglg = 0.0, vblg = 0.0;
-            double vr0rg = 0.0, vg0rg = 0.0, vb0rg = 0.0;
-            double vrrg = 0.0, vgrg = 0.0, vbrg = 0.0;
-            double vr2rg = 0.0, vg2rg = 0.0, vb2rg = 0.0;
-            double vr3rg = 0.0, vg3rg = 0.0, vb3rg = 0.0;
-
-            double colr, colg,colb, de;
-            //printf("step %d/%d\n", i,pi.sizeX());
-            alpha=0.0; colt=1.0; alphamid=0.0; vr = 0.0; vg = 0.0; vb = 0.0; alpha0r=0.0;
-            vrl = 0.0; vgl = 0.0; vbl = 0.0; alphal=0.0;
-            vrr = 0.0; vgr = 0.0; vbr = 0.0; alphar=0.0;
-            vr2r = 0.0, vg2r = 0.0, vb2r = 0.0, alpha2r=0.0;
-            vr3r = 0.0, vg3r = 0.0, vb3r = 0.0, alpha3r=0.0;
-            vrg = 0.0; vgg = 0.0; vbg = 0.0;
-            vrlg = 0.0; vglg = 0.0; vblg = 0.0;
-            vrrg = 0.0; vgrg = 0.0; vbrg = 0.0;
-            vr0rg = 0.0, vg0rg = 0.0, vb0rg = 0.0;
-            vr2rg = 0.0, vg2rg = 0.0, vb2rg = 0.0;
-            vr3rg = 0.0, vg3rg = 0.0, vb3rg = 0.0;
-            colr = (double)tf[4*i+0]/255.0;
-            colg = (double)tf[4*i+1]/255.0;
-            colb = (double)tf[4*i+2]/255.0;
-            de = (double)tf[4*i+3]/255.0;
-            for (k=0; k<nstep; k++)
-            {
-                double tt = (double)k/(double)(nstep-1);
-                alpha=colt*de/(double)nstep*voxelstep;
-                vr += alpha*colr;
-                vg += alpha*colg;
-                vb += alpha*colb;
-                alpha0r += alpha*1.0;
-                vrl += alpha*colr*(1.0-tt);
-                vgl += alpha*colg*(1.0-tt);
-                vbl += alpha*colb*(1.0-tt);
-                alphal += alpha*(1.0-tt);
-                vrr += alpha*colr*tt;
-                vgr += alpha*colg*tt;
-                vbr += alpha*colb*tt;
-                alphar+= alpha*tt;
-                vr2r += alpha*colr*tt*tt;
-                vg2r += alpha*colg*tt*tt;
-                vb2r += alpha*colb*tt*tt;
-                alpha2r += alpha*tt*tt;
-                vr3r += alpha*colr*tt*tt*tt;
-                vg3r += alpha*colg*tt*tt*tt;
-                vb3r += alpha*colb*tt*tt*tt;
-                alpha3r += alpha*tt*tt*tt;
-                alphamid += alpha*(tt<0.5?tt*2.0:2.0-2.0*tt);
-                colt *= (1.0-de/(double)nstep*voxelstep);
-            }
-            preinttab[4*(i*ts+i)]=(unsigned short)(scal*vr); preinttab[4*(i*ts+i)+1]=(unsigned short)(scal*vg); preinttab[4*(i*ts+i)+2]=(unsigned short)(scal*vb); preinttab[4*(i*ts+i)+3]=(unsigned short)(scal*(1.0-colt));
-            rampleft[4*(i*ts+i)]=(unsigned short)(scal*vrl); rampleft[4*(i*ts+i)+1]=(unsigned short)(scal*vgl); rampleft[4*(i*ts+i)+2]=(unsigned short)(scal*vbl); rampleft[4*(i*ts+i)+3]=(unsigned short)(scal*alphal);
-            rampright[4*(i*ts+i)]=(unsigned short)(scal*vrr); rampright[4*(i*ts+i)+1]=(unsigned short)(scal*vgr); rampright[4*(i*ts+i)+2]=(unsigned short)(scal*vbr); rampright[4*(i*ts+i)+3]=(unsigned short)(scal*alphar);
-            printf("i=%d  Ka=%g,%g,%g   Kd=%g,%g,%g\n",i,vr,vg,vb,vrr,vgr,vbr);
-            for (j=i+1; j<ts; j++)
-            {
-                double d = 1.0/(double)(j-i);
-                double kk=0.0;
-                alpha=0.0; colt=1.0; alphamid=0.0;  vr = 0.0; vg = 0.0; vb = 0.0; alpha0r=0.0;
-                vrl = 0.0; vgl = 0.0; vbl = 0.0; alphal=0.0;
-                vrr = 0.0; vgr = 0.0; vbr = 0.0; alphar=0.0;
-                vr2r = 0.0, vg2r = 0.0, vb2r = 0.0, alpha2r=0.0;
-                vr3r = 0.0, vg3r = 0.0, vb3r = 0.0, alpha3r=0.0;
-                vrg = 0.0, vgg = 0.0, vbg = 0.0;
-                vr0rg = 0.0, vg0rg = 0.0, vb0rg = 0.0;
-                vrlg = 0.0; vglg = 0.0; vblg = 0.0;
-                vrrg = 0.0; vgrg = 0.0; vbrg = 0.0;
-                vr2rg = 0.0, vg2rg = 0.0, vb2rg = 0.0;
-                vr3rg = 0.0, vg3rg = 0.0, vb3rg = 0.0;
-                for (k=0; k<nstep*(j-i); k++)
-                {
-                    double ramp = (double)k/(double)(nstep*(j-i)-1);
-                    int ind=k/nstep;
-                    double t = (double)(k-ind*nstep)/(double)nstep;
-                    ind+=i;
-                    colr = (double)tf[4*ind]/255.0*(1.0-t)+(double)tf[4*(ind+1)]/255.0*t;
-                    colg = (double)tf[4*ind+1]/255.0*(1.0-t)+(double)tf[4*(ind+1)+1]/255.0*t;
-                    colb = (double)tf[4*ind+2]/255.0*(1.0-t)+(double)tf[4*(ind+1)+2]/255.0*t;
-                    de = (double)tf[4*ind+3]/255.0*(1.0-t)+(double)tf[4*(ind+1)+3]/255.0*t;
-                    ind++;
-
-                    alpha = colt*de/(double)nstep*d*voxelstep;
-                    vr += alpha*colr;
-                    vg += alpha*colg;
-                    vb += alpha*colb;
-                    alpha0r += alpha*1.0;
-                    vrl += alpha*colr*(1.0-ramp);
-                    vgl += alpha*colg*(1.0-ramp);
-                    vbl += alpha*colb*(1.0-ramp);
-                    alphal += alpha*(1.0-ramp);
-                    vrr += alpha*colr*ramp;
-                    vgr += alpha*colg*ramp;
-                    vbr += alpha*colb*ramp;
-                    alphar += alpha*ramp;
-                    vr2r += alpha*colr*ramp*ramp;
-                    vg2r += alpha*colg*ramp*ramp;
-                    vb2r += alpha*colb*ramp*ramp;
-                    alpha2r += alpha*ramp*ramp;
-                    vr3r += alpha*colr*ramp*ramp*ramp;
-                    vg3r += alpha*colg*ramp*ramp*ramp;
-                    vb3r += alpha*colb*ramp*ramp*ramp;
-                    alpha3r += alpha*ramp*ramp*ramp;
-                    alphamid += alpha*(ramp<0.5?ramp*2.0:2.0-2.0*ramp);
-                    colt *= (1.0-de/(double)nstep*d*voxelstep);
-
-                }
-                if (vr>1.0) vr=1.0; else if (vr<0.0) vr=0.0;
-                if (vg>1.0) vg=1.0; else if (vg<0.0) vg=0.0;
-                if (vb>1.0) vb=1.0; else if (vb<0.0) vb=0.0;
-                if (alpha0r>1.0) alpha0r=1.0; else if (alpha0r<0.0) alpha0r=0.0;
-                if (alpha>1.0) alpha=1.0; else if (alpha<0.0) alpha=0.0;
-                if (vrl>1.0) vrl=1.0; else if (vrl<0.0) vrl=0.0;
-                if (vgl>1.0) vgl=1.0; else if (vgl<0.0) vgl=0.0;
-                if (vbl>1.0) vbl=1.0; else if (vbl<0.0) vbl=0.0;
-                if (alphal>1.0) alphal=1.0; else if (alphal<0.0) alphal=0.0;
-                if (vrr>1.0) vrr=1.0; else if (vrr<0.0) vrr=0.0;
-                if (vgr>1.0) vgr=1.0; else if (vgr<0.0) vgr=0.0;
-                if (vbr>1.0) vbr=1.0; else if (vbr<0.0) vbr=0.0;
-                if (alphar>1.0) alphar=1.0; else if (alphar<0.0) alphar=0.0;
-                if (vr2r>1.0) vr2r=1.0; else if (vr2r<0.0) vr2r=0.0;
-                if (vg2r>1.0) vg2r=1.0; else if (vg2r<0.0) vg2r=0.0;
-                if (vb2r>1.0) vb2r=1.0; else if (vb2r<0.0) vb2r=0.0;
-                if (alpha2r>1.0) alpha2r=1.0; else if (alpha2r<0.0) alpha2r=0.0;
-                if (vr3r>1.0) vr3r=1.0; else if (vr3r<0.0) vr3r=0.0;
-                if (vg3r>1.0) vg3r=1.0; else if (vg3r<0.0) vg3r=0.0;
-                if (vb3r>1.0) vb3r=1.0; else if (vb3r<0.0) vb3r=0.0;
-                if (alpha3r>1.0) alpha3r=1.0; else if (alpha3r<0.0) alpha3r=0.0;
-                preinttab[4*(j*ts+i)]=(unsigned short)(scal*vr); preinttab[4*(j*ts+i)+1]=(unsigned short)(scal*vg); preinttab[4*(j*ts+i)+2]=(unsigned short)(scal*vb); preinttab[4*(j*ts+i)+3]=(unsigned short)(scal*(1.0-colt));
-                rampleft[4*(j*ts+i)]=(unsigned short)(scal*vrl); rampleft[4*(j*ts+i)+1]=(unsigned short)(scal*vgl); rampleft[4*(j*ts+i)+2]=(unsigned short)(scal*vbl); rampleft[4*(j*ts+i)+3]=(unsigned short)(scal*alphal);
-                rampright[4*(j*ts+i)]=(unsigned short)(scal*vrr); rampright[4*(j*ts+i)+1]=(unsigned short)(scal*vgr); rampright[4*(j*ts+i)+2]=(unsigned short)(scal*vbr); rampright[4*(j*ts+i)+3]=(unsigned short)(scal*alphar);
-            }
-            for (j=0; j<i; j++)
-            {
-                double d = 1.0/(double)(i-j);
-                double kk=0.0;
-                colt=1.0; alpha=0.0; alphamid=0.0; vr = 0.0; vg = 0.0; vb = 0.0; alpha0r=0.0;
-                vrl = 0.0; vgl = 0.0; vbl = 0.0; alphal=0.0;
-                vrr = 0.0; vgr = 0.0; vbr = 0.0; alphar=0.0;
-                vr2r = 0.0, vg2r = 0.0, vb2r = 0.0, alpha2r=0.0;
-                vr3r = 0.0, vg3r = 0.0, vb3r = 0.0, alpha3r=0.0;
-                vrg = 0.0, vgg = 0.0, vbg = 0.0;
-                vr0rg = 0.0, vg0rg = 0.0, vb0rg = 0.0;
-                vrlg = 0.0; vglg = 0.0; vblg = 0.0;
-                vrrg = 0.0; vgrg = 0.0; vbrg = 0.0;
-                vr2rg = 0.0, vg2rg = 0.0, vb2rg = 0.0;
-                vr3rg = 0.0, vg3rg = 0.0, vb3rg = 0.0;
-                for (k=0; k<nstep*(i-j); k++)
-                {
-                    double ramp = (double)k/(double)(nstep*(i-j)-1);
-                    int ind=k/nstep;
-                    double t = (double)(k-ind*nstep)/(double)nstep;
-                    ind+=j;
-                    colr = (double)tf[4*ind]/255.0*(1.0-t)+(double)tf[4*(ind+1)]/255.0*t;
-                    colg = (double)tf[4*ind+1]/255.0*(1.0-t)+(double)tf[4*(ind+1)+1]/255.0*t;
-                    colb = (double)tf[4*ind+2]/255.0*(1.0-t)+(double)tf[4*(ind+1)+2]/255.0*t;
-                    de = (double)tf[4*ind+3]/255.0*(1.0-t)+(double)tf[4*(ind+1)+3]/255.0*t;
-                    ind++;
-
-                    alpha = colt*de/(double)nstep*d*voxelstep;
-                    vr += alpha*colr;
-                    vg += alpha*colg;
-                    vb += alpha*colb;
-                    alpha0r += alpha*1.0;
-                    vrl += alpha*colr*(1.0-ramp);
-                    vgl += alpha*colg*(1.0-ramp);
-                    vbl += alpha*colb*(1.0-ramp);
-                    alphal += alpha*(1.0-ramp);
-                    vrr += alpha*colr*ramp;
-                    vgr += alpha*colg*ramp;
-                    vbr += alpha*colb*ramp;
-                    alphar += alpha*ramp;
-                    vr2r += alpha*colr*ramp*ramp;
-                    vg2r += alpha*colg*ramp*ramp;
-                    vb2r += alpha*colb*ramp*ramp;
-                    alpha2r += alpha*ramp*ramp;
-                    vr3r += alpha*colr*ramp*ramp*ramp;
-                    vg3r += alpha*colg*ramp*ramp*ramp;
-                    vb3r += alpha*colb*ramp*ramp*ramp;
-                    alpha3r += alpha*ramp*ramp*ramp;
-                    alphamid += alpha*(ramp<0.5?ramp*2.0:2.0-2.0*ramp);
-                    colt *= (1.0-de/(double)nstep*d*voxelstep);
-                }
-                if (vr>1.0) vr=1.0; else if (vr<0.0) vr=0.0;
-                if (vg>1.0) vg=1.0; else if (vg<0.0) vg=0.0;
-                if (vb>1.0) vb=1.0; else if (vb<0.0) vb=0.0;
-                if (alpha0r>1.0) alpha0r=1.0; else if (alpha0r<0.0) alpha0r=0.0;
-                if (alpha>1.0) alpha=1.0; else if (alpha<0.0) alpha=0.0;
-                if (vrl>1.0) vrl=1.0; else if (vrl<0.0) vrl=0.0;
-                if (vgl>1.0) vgl=1.0; else if (vgl<0.0) vgl=0.0;
-                if (vbl>1.0) vbl=1.0; else if (vbl<0.0) vbl=0.0;
-                if (alphal>1.0) alphal=1.0; else if (alphal<0.0) alphal=0.0;
-                if (vrr>1.0) vrr=1.0; else if (vrr<0.0) vrr=0.0;
-                if (vgr>1.0) vgr=1.0; else if (vgr<0.0) vgr=0.0;
-                if (vbr>1.0) vbr=1.0; else if (vbr<0.0) vbr=0.0;
-                if (alphar>1.0) alphar=1.0; else if (alphar<0.0) alphar=0.0;
-                if (vr2r>1.0) vr2r=1.0; else if (vr2r<0.0) vr2r=0.0;
-                if (vg2r>1.0) vg2r=1.0; else if (vg2r<0.0) vg2r=0.0;
-                if (vb2r>1.0) vb2r=1.0; else if (vb2r<0.0) vb2r=0.0;
-                if (alpha2r>1.0) alpha2r=1.0; else if (alpha2r<0.0) alpha2r=0.0;
-                if (vr3r>1.0) vr3r=1.0; else if (vr3r<0.0) vr3r=0.0;
-                if (vg3r>1.0) vg3r=1.0; else if (vg3r<0.0) vg3r=0.0;
-                if (vb3r>1.0) vb3r=1.0; else if (vb3r<0.0) vb3r=0.0;
-                if (alpha3r>1.0) alpha3r=1.0; else if (alpha3r<0.0) alpha3r=0.0;
-                preinttab[4*(j*ts+i)]=(unsigned short)(scal*vr); preinttab[4*(j*ts+i)+1]=(unsigned short)(scal*vg); preinttab[4*(j*ts+i)+2]=(unsigned short)(scal*vb); preinttab[4*(j*ts+i)+3]=(unsigned short)(scal*(1.0-colt));
-                rampleft[4*(j*ts+i)]=(unsigned short)(scal*vrl); rampleft[4*(j*ts+i)+1]=(unsigned short)(scal*vgl); rampleft[4*(j*ts+i)+2]=(unsigned short)(scal*vbl); rampleft[4*(j*ts+i)+3]=(unsigned short)(scal*alphal);
-                rampright[4*(j*ts+i)]=(unsigned short)(scal*vrr); rampright[4*(j*ts+i)+1]=(unsigned short)(scal*vgr); rampright[4*(j*ts+i)+2]=(unsigned short)(scal*vbr); rampright[4*(j*ts+i)+3]=(unsigned short)(scal*alphar);
-            }
-        }
-        for (i=0; i<ts; i++)
-        {
-            preinttab[4*(i*ts+0)]=0; preinttab[4*(i*ts+0)+1]=0; preinttab[4*(i*ts+0)+2]=0; preinttab[4*(i*ts+0)+3]=0;
-            rampleft[4*(i*ts+0)]=0; rampleft[4*(i*ts+0)+1]=0; rampleft[4*(i*ts+0)+2]=0; rampleft[4*(i*ts+0)+3]=0;
-            rampright[4*(i*ts+0)]=0; rampright[4*(i*ts+0)+1]=0; rampright[4*(i*ts+0)+2]=0; rampright[4*(i*ts+0)+3]=0;
-
-            preinttab[4*(0*ts+i)]=0; preinttab[4*(0*ts+i)+1]=0; preinttab[4*(0*ts+i)+2]=0; preinttab[4*(0*ts+i)+3]=0;
-            rampleft[4*(0*ts+i)]=0; rampleft[4*(0*ts+i)+1]=0; rampleft[4*(0*ts+i)+2]=0; rampleft[4*(0*ts+i)+3]=0;
-            rampright[4*(0*ts+i)]=0; rampright[4*(0*ts+i)+1]=0; rampright[4*(0*ts+i)+2]=0; rampright[4*(0*ts+i)+3]=0;
-
-            preinttab[4*(i*ts+ts-1)]=0; preinttab[4*(i*ts+ts-1)+1]=0; preinttab[4*(i*ts+ts-1)+2]=0; preinttab[4*(i*ts+ts-1)+3]=0;
-            rampleft[4*(i*ts+ts-1)]=0; rampleft[4*(i*ts+ts-1)+1]=0; rampleft[4*(i*ts+ts-1)+2]=0; rampleft[4*(i*ts+ts-1)+3]=0;
-            rampright[4*(i*ts+ts-1)]=0; rampright[4*(i*ts+ts-1)+1]=0; rampright[4*(i*ts+ts-1)+2]=0; rampright[4*(i*ts+ts-1)+3]=0;
-
-            preinttab[4*((ts-1)*ts+i)]=0; preinttab[4*((ts-1)*ts+i)+1]=0; preinttab[4*((ts-1)*ts+i)+2]=0; preinttab[4*((ts-1)*ts+i)+3]=0;
-            rampleft[4*((ts-1)*ts+i)]=0; rampleft[4*((ts-1)*ts+i)+1]=0; rampleft[4*((ts-1)*ts+i)+2]=0; rampleft[4*((ts-1)*ts+i)+3]=0;
-            rampright[4*((ts-1)*ts+i)]=0; rampright[4*((ts-1)*ts+i)+1]=0; rampright[4*((ts-1)*ts+i)+2]=0; rampright[4*((ts-1)*ts+i)+3]=0;
-        }
-    }
-};
 
 // DATA for EXAMPLE RENDERING
 
@@ -524,11 +169,11 @@ void createlist()
     glGenBuffers(4,id);
     glBindBuffer(GL_ARRAY_BUFFER, id[0]);
     glBufferData(GL_ARRAY_BUFFER, 3*8*sizeof (float), vert, GL_STATIC_DRAW);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id[1]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3*12*sizeof (unsigned int), faces, GL_STATIC_DRAW);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     // vertex shader
     int vshaderlength[500];
@@ -536,9 +181,9 @@ void createlist()
     for (i=0; i<HV_VOLDATA_NVS; i++) vshaderlength[i]=strlen(hvVolDataVS[i]);
     glShaderSource(vshader, HV_VOLDATA_NVS, (const GLchar **)hvVolDataVS, vshaderlength);
     glCompileShader(vshader);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glGetShaderiv(vshader, GL_COMPILE_STATUS, &compiled);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     if (compiled) { printf("Vertex Shader compilation successful!\n"); }
     else
     {
@@ -557,9 +202,9 @@ void createlist()
     glShaderSource(fshader, HV_VOLDATA_NFS, (const GLchar **)hvVolDataFS, fshaderlength);
 #endif
     glCompileShader(fshader);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glGetShaderiv(fshader, GL_COMPILE_STATUS, &compiled);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     if (compiled) { printf("Fragment Shader compilation successful!\n"); }
     else
     {
@@ -572,9 +217,9 @@ void createlist()
     glAttachShader(gpuprog, vshader);
     glAttachShader(gpuprog, fshader);
     glLinkProgram(gpuprog);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glGetProgramiv(gpuprog, GL_LINK_STATUS, &compiled);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     if (compiled) { printf("Link successful!\n"); }
     else
     {
@@ -584,7 +229,7 @@ void createlist()
     }
 
     glUseProgram(gpuprog);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     int nattr; glGetProgramiv(gpuprog, GL_ACTIVE_ATTRIBUTES, &nattr);
     printf("activated attributes : %d\n", nattr);
@@ -593,51 +238,51 @@ void createlist()
 
     int ivpos = glGetAttribLocation(gpuprog, "vpos");
     printf("attribute vpos = %d\n", ivpos);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     itrans = glGetUniformLocation(gpuprog, "trans");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform trans = %d\n", itrans);
     iposition = glGetUniformLocation(gpuprog, "rev");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform rev = %d\n", iposition);
     ipersp = glGetUniformLocation(gpuprog, "persp");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform persp = %d\n", ipersp);
     ieye = glGetUniformLocation(gpuprog, "eye");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform eyepos = %d\n", ieye);
     ilight = glGetUniformLocation(gpuprog, "light");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform light = %d\n", ilight);
     ipara = glGetUniformLocation(gpuprog, "lipara");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform light = %d\n", ilight);
     isampler = glGetUniformLocation(gpuprog, "data");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("sampler3D data = %d\n", isampler);
 
 #ifdef PREINT
     itf = glGetUniformLocation(gpuprog, "pretab");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("sampler1D pretab = %d\n", itf);
 #else
     islice = glGetUniformLocation(gpuprog, "slice");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform slice = %d\n", islice);
     isampling = glGetUniformLocation(gpuprog, "sampling");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("uniform sampling = %d\n", isampling);
     itf = glGetUniformLocation(gpuprog, "tf");
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     printf("sampler1D tf = %d\n", itf);
 #endif
 
     glBindBuffer(GL_ARRAY_BUFFER, id[0]);
     glVertexAttribPointer(ivpos, 3, GL_FLOAT, false, 0, NULL);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glEnableVertexAttribArray(ivpos);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 }
 
 void inittextures()
@@ -645,7 +290,7 @@ void inittextures()
     glGenTextures(4, textid);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, textid[0]);
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, obj.sx, obj.sy, obj.sz, 0, GL_RGBA, GL_UNSIGNED_BYTE, obj.grad);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, obj.getSx(), obj.getSy(), obj.getSz(), 0, GL_RGBA, GL_UNSIGNED_BYTE, obj.getGrad());
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -654,7 +299,7 @@ void inittextures()
 #ifdef PREINT
     glActiveTexture(GL_TEXTURE0+1);
     glBindTexture(GL_TEXTURE_2D, textid[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, obj.tabsize, obj.tabsize, 0, GL_RGBA, GL_UNSIGNED_SHORT, obj.preinttab);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, obj.getTabSize(), obj.getTabSize(), 0, GL_RGBA, GL_UNSIGNED_SHORT, obj.getPreIntTab());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -662,7 +307,7 @@ void inittextures()
 #else
     glActiveTexture(GL_TEXTURE0+1);
     glBindTexture(GL_TEXTURE_1D, textid[1]);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, obj.tabsize, 0, GL_RGBA, GL_UNSIGNED_BYTE, obj.transfer);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, obj.getTabSize(), 0, GL_RGBA, GL_UNSIGNED_BYTE, obj.getTransfer());
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -691,12 +336,12 @@ void display()
 
     float li[3] = { 1.0, 1.0, 1.0 };
     glUniform3fv(ilight, 1, li);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     float liparadata[4];
     // define Ka, Kd,Ks, Phong exp
     liparadata[0]=0.3; liparadata[1]=0.7; liparadata[2]=0.1; liparadata[3]=60.0;
     glUniform4fv(ipara, 1, liparadata);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
 #ifdef PREINT
 #else
@@ -721,7 +366,7 @@ void display()
 
     float eye[3]={ -12.0, -12.0, 12.0 };
     glUniform3fv(ieye, 1, eye);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     tr.setIdentity();
     tr.frustum(-0.1, 0.1, -0.1*H/W, 0.1*H/W, 0.08, 50.0);
@@ -729,7 +374,7 @@ void display()
     tr.translation(vec3<float>(-eye[0], -eye[1], -eye[2]));
     tr.getMatrix(mm);
     glUniformMatrix4fv(ipersp, 1, false, mm);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     tr.setIdentity();
     tr.rotation(vec3<float>(0.0,0.0,1.0), alpha/180.0*PI);
@@ -737,44 +382,44 @@ void display()
     tr.scale(vec3<float>(8.0,8.0,8.0));
     tr.getMatrix(mm);
     glUniformMatrix4fv(itrans, 1, false, mm);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     tr.setIdentity();
     tr.scale(vec3<float>(1.0/8.0,1.0/8.0,1.0/8.0));
     tr.rotation(vec3<float>(1.0,0.0,0.0), -beta/180.0*PI);
     tr.rotation(vec3<float>(0.0,0.0,1.0), -alpha/180.0*PI);
     tr.getMatrix(mm);
     glUniformMatrix4fv(iposition, 1, false, mm);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) ;
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, textid[0]);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glUniform1i(isampler,0);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glEnable(GL_TEXTURE_3D);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glActiveTexture(GL_TEXTURE0+1);
 #ifdef PREINT
     glBindTexture(GL_TEXTURE_2D, textid[1]);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glUniform1i(itf,1);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glEnable(GL_TEXTURE_2D);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 #else
     glBindTexture(GL_TEXTURE_1D, textid[1]);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glUniform1i(itf,1);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
     glEnable(GL_TEXTURE_1D);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 #endif
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id[1]);
     glDrawElements(GL_TRIANGLES, 12*3, GL_UNSIGNED_INT, NULL);
-    CHECK_GL_ERROR();
+    //CHECK_GL_ERROR();
 
     glutSwapBuffers();
 }
@@ -810,15 +455,14 @@ void key(unsigned char c, int x, int y)
 // START PROGRAMM AND INITIALIZE WINDOW
 int main(int argc, char **argv)
 {
-
-    vj.cross(vi,vk);
-    vj.reverse();
+    vj.cross(vk,vi);
+    //vj.reverse();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 
     glutInitWindowPosition(0,0) ;
     glutInitWindowSize(W, H);
-    int win = glutCreateWindow("ma fenetre");
+    glutCreateWindow("ma fenetre");
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
@@ -830,7 +474,7 @@ int main(int argc, char **argv)
     glutDisplayFunc(display);
     glutMouseFunc(clic);
     glutMotionFunc(bouge);
-    //  glutKeyboardFunc(key);
+    //glutKeyboardFunc(key);
 
     // fonction de transfert
     tf = new unsigned char [128*4];
@@ -838,7 +482,7 @@ int main(int argc, char **argv)
     for (i=0; i<127; i++) { tf[4*i]=0; tf[4*i+1]=0; tf[4*i+2]=0; tf[4*i+3]=0; }
     for (i=10; i<30; i++) { tf[4*i]=static_cast<unsigned char>(0.99*255.0); tf[4*i+1]=(unsigned char)(0.9*255.0); tf[4*i+2]=(unsigned char)(0.6*255.0); tf[4*i+3]=(unsigned char)(0.025*255.0); }
     for (i=30; i<40; i++) { tf[4*i]=(unsigned char)(0.99*255.0); tf[4*i+1]=(unsigned char)(0.29*255.0); tf[4*i+2]=(unsigned char)(0.1*255.0); tf[4*i+3]=(unsigned char)(0.2*255.0); }
-    for (i=40; i<50; i++) { tf[4*i]=(unsigned char)(0.5*255.0); tf[4*i+1]=(unsigned char)(0.7*255.0); tf[4*i+2]=(unsigned char)(0.9*255.0); tf[4*i+3]=(unsigned char)(0.85*255.0); }
+    for (i=40; i<50; i++) { tf[4*i]=(unsigned char)(0.9*255.0); tf[4*i+1]=(unsigned char)(0.7*255.0); tf[4*i+2]=(unsigned char)(0.9*255.0); tf[4*i+3]=(unsigned char)(0.85*255.0); }
     for (i=70; i<90; i++) { tf[4*i]=(unsigned char)(0.99*255.0); tf[4*i+1]=(unsigned char)(0.8*255.0); tf[4*i+2]=(unsigned char)(0.7*255.0); tf[4*i+3]=(unsigned char)(0.85*255.0); }
     for (i=100; i<126; i++) { tf[4*i]=(unsigned char)(0.99*255.0); tf[4*i+1]=(unsigned char)(0.9*255.0); tf[4*i+2]=(unsigned char)(0.6*255.0); tf[4*i+3]=(unsigned char)(0.85*255.0); }
 

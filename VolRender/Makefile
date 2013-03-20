@@ -114,6 +114,30 @@ VolRender/fast:
 	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/build
 .PHONY : VolRender/fast
 
+src/Raw3DData.o: src/Raw3DData.cpp.o
+.PHONY : src/Raw3DData.o
+
+# target to build an object file
+src/Raw3DData.cpp.o:
+	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o
+.PHONY : src/Raw3DData.cpp.o
+
+src/Raw3DData.i: src/Raw3DData.cpp.i
+.PHONY : src/Raw3DData.i
+
+# target to preprocess a source file
+src/Raw3DData.cpp.i:
+	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/src/Raw3DData.cpp.i
+.PHONY : src/Raw3DData.cpp.i
+
+src/Raw3DData.s: src/Raw3DData.cpp.s
+.PHONY : src/Raw3DData.s
+
+# target to generate assembly for a file
+src/Raw3DData.cpp.s:
+	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/src/Raw3DData.cpp.s
+.PHONY : src/Raw3DData.cpp.s
+
 src/VolRender.o: src/VolRender.cpp.o
 .PHONY : src/VolRender.o
 
@@ -147,6 +171,9 @@ help:
 	@echo "... VolRender"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... src/Raw3DData.o"
+	@echo "... src/Raw3DData.i"
+	@echo "... src/Raw3DData.s"
 	@echo "... src/VolRender.o"
 	@echo "... src/VolRender.i"
 	@echo "... src/VolRender.s"

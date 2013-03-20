@@ -11,8 +11,6 @@ find_package(GLUT REQUIRED)
 #set( CMAKE_VERBOSE_MAKEFILE on )
 #set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_BUILD_TYPE Debug)
-#modules complémentaires (glew et autres)
-
 
 #LIBRARIES
 find_library(X11    X11)

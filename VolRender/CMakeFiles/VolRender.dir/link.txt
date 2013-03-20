@@ -1,1 +1,1 @@
-/usr/bin/c++    -Wall -march=native -g    CMakeFiles/VolRender.dir/src/VolRender.cpp.o  -o VolRender -rdynamic -lQtGui -lQtCore -lX11 -lglut -lXmu -lXi -lGLEW 
+/usr/bin/c++    -Wall -march=native -g    CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o CMakeFiles/VolRender.dir/src/VolRender.cpp.o  -o VolRender -rdynamic -lQtGui -lQtCore -lX11 -lglut -lXmu -lXi -lGLEW 

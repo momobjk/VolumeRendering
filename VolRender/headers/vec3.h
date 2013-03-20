@@ -12,7 +12,8 @@
 #endif // _MSC_VER > 1000
 
 #include <cmath>
-
+#include <stdlib.h>
+#include <cstdio>
 
 template <class T> class vec3  
 {

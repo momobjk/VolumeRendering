@@ -62,7 +62,7 @@ CMAKE_BINARY_DIR = /home/mcifti/VolumeRendering/VolRender
 CMakeFiles/VolRender.dir/all:
 	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/depend
 	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/CMakeFiles  1 2
 	@echo "Built target VolRender"
 .PHONY : CMakeFiles/VolRender.dir/all
 
@@ -72,7 +72,7 @@ all: CMakeFiles/VolRender.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/VolRender.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/mcifti/VolumeRendering/VolRender/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/mcifti/VolumeRendering/VolRender/CMakeFiles 2
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/VolRender.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/mcifti/VolumeRendering/VolRender/CMakeFiles 0
 .PHONY : CMakeFiles/VolRender.dir/rule

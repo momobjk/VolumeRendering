@@ -52,9 +52,32 @@ include CMakeFiles/VolRender.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/VolRender.dir/flags.make
 
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o: CMakeFiles/VolRender.dir/flags.make
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o: src/Raw3DData.cpp
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/CMakeFiles $(CMAKE_PROGRESS_1)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o -c /home/mcifti/VolumeRendering/VolRender/src/Raw3DData.cpp
+
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/VolRender.dir/src/Raw3DData.cpp.i"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/mcifti/VolumeRendering/VolRender/src/Raw3DData.cpp > CMakeFiles/VolRender.dir/src/Raw3DData.cpp.i
+
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/VolRender.dir/src/Raw3DData.cpp.s"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/mcifti/VolumeRendering/VolRender/src/Raw3DData.cpp -o CMakeFiles/VolRender.dir/src/Raw3DData.cpp.s
+
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.requires:
+.PHONY : CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.requires
+
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.provides: CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.requires
+	$(MAKE) -f CMakeFiles/VolRender.dir/build.make CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.provides.build
+.PHONY : CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.provides
+
+CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.provides.build: CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o
+
 CMakeFiles/VolRender.dir/src/VolRender.cpp.o: CMakeFiles/VolRender.dir/flags.make
 CMakeFiles/VolRender.dir/src/VolRender.cpp.o: src/VolRender.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/mcifti/VolumeRendering/VolRender/CMakeFiles $(CMAKE_PROGRESS_2)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/VolRender.dir/src/VolRender.cpp.o"
 	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/VolRender.dir/src/VolRender.cpp.o -c /home/mcifti/VolumeRendering/VolRender/src/VolRender.cpp
 
@@ -77,11 +100,13 @@ CMakeFiles/VolRender.dir/src/VolRender.cpp.o.provides.build: CMakeFiles/VolRende
 
 # Object files for target VolRender
 VolRender_OBJECTS = \
+"CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o" \
 "CMakeFiles/VolRender.dir/src/VolRender.cpp.o"
 
 # External object files for target VolRender
 VolRender_EXTERNAL_OBJECTS =
 
+VolRender: CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o
 VolRender: CMakeFiles/VolRender.dir/src/VolRender.cpp.o
 VolRender: CMakeFiles/VolRender.dir/build.make
 VolRender: /usr/lib/x86_64-linux-gnu/libQtGui.so
@@ -99,6 +124,7 @@ VolRender: CMakeFiles/VolRender.dir/link.txt
 CMakeFiles/VolRender.dir/build: VolRender
 .PHONY : CMakeFiles/VolRender.dir/build
 
+CMakeFiles/VolRender.dir/requires: CMakeFiles/VolRender.dir/src/Raw3DData.cpp.o.requires
 CMakeFiles/VolRender.dir/requires: CMakeFiles/VolRender.dir/src/VolRender.cpp.o.requires
 .PHONY : CMakeFiles/VolRender.dir/requires
 
